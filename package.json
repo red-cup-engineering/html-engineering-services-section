@@ -1,6 +1,6 @@
 {
   "name": "@red-cup-engineering/html-engineering-services-section",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "module",
   "description": "The one section for all HTML: rendering documents and fragments, escaping, structural projection, Markdown-to-HTML, and HTML validity. Seated in computer-data serialization beside xml and json, restricting the XML codec rather than owning competing escaping or AST writers.",
   "files": [

@@ -4,6 +4,8 @@
  * Page renderers provide body presentation nodes and head fragments; this module
  * admits them through the HTML document render's carrier and profile fiber.
  */
+import { cell } from "@red-cup-engineering/signcell/cell";
+import { documentSpine } from "@red-cup-engineering/signcell/document-spine";
 import { htmlCarrierOf, buildHtmlDocumentPlan, renderHtmlDocument } from "./html-document-render.mjs";
 import { escapeAttr, escapeText } from "@red-cup-engineering/html-structural-projection-service";
 import { renderHtmlNode } from "@red-cup-engineering/html-structural-projection-service/document-nodes";
@@ -55,15 +57,10 @@ export function staticWebsiteBodyAttributes(
   });
 }
 
-/** A static page's document: one address, which is its own valuation site. */
-function staticDocument(address) {
-  return Object.freeze({
-    kind: "static-page.document",
-    addresses: Object.freeze([Object.freeze({ key: address })]),
-    order: Object.freeze([]),
-    references: Object.freeze([]),
-    valuationSites: Object.freeze([Object.freeze({ address })]),
-  });
+/** A static page's document: the signcell document spine of one cell, (token, is, static-page),
+ *  told by the token itself; its address is the page's semantic address and valuation site. */
+function staticDocument(token) {
+  return documentSpine({ cells: [cell(token, "is", "static-page", { for: [token] })] });
 }
 
 function headFragment(child) {
@@ -98,8 +95,8 @@ export function renderStaticWebsiteHtmlPresentation(input) {
   if (typeof input.token !== "string" || input.token === "") {
     throw new TypeError("renderStaticWebsiteHtmlPresentation: a page needs a token to address it");
   }
-  const address = input.token;
-  const document = staticDocument(address);
+  const document = staticDocument(input.token);
+  const [{ key: address }] = document.addresses;
   const valuationSite = address;
   const nodes = Object.freeze(input.nodes.map((node) => Object.freeze({
     ...node,
