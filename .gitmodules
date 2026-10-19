@@ -1,0 +1,8 @@
+[submodule "html-structural-projection-service"]
+	path = services/html-structural-projection-service
+	url = https://github.com/red-cup-engineering/html-structural-projection-service.git
+	branch = main
+[submodule "html-document-render-service"]
+	path = services/html-document-render-service
+	url = https://github.com/red-cup-engineering/html-document-render-service.git
+	branch = main
