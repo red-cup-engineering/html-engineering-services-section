@@ -5,8 +5,7 @@
   "description": "The one section for all HTML: rendering documents and fragments, escaping, structural projection, Markdown-to-HTML, and HTML validity. Seated in computer-data serialization beside xml and json, restricting the XML codec rather than owning competing escaping or AST writers.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/red-cup-engineering/computer-serialized-content-engineering-services-section.git",
-    "directory": "services/html-engineering-services-section"
+    "url": "git+https://github.com/red-cup-engineering/html-engineering-services-section.git"
   },
   "files": [
     "src",
