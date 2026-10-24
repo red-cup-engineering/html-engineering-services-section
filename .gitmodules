@@ -6,3 +6,7 @@
 	path = services/html-document-render-service
 	url = https://github.com/red-cup-engineering/html-document-render-service.git
 	branch = main
+[submodule "html-file-codec-service"]
+	path = services/html-file-codec-service
+	url = https://github.com/red-cup-engineering/html-file-codec-service.git
+	branch = main
