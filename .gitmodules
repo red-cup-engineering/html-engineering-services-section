@@ -10,3 +10,7 @@
 	path = services/html-file-codec-service
 	url = https://github.com/red-cup-engineering/html-file-codec-service.git
 	branch = main
+[submodule "services/semiotic-hypertext-packet-engineering-services-section"]
+	path = services/semiotic-hypertext-packet-engineering-services-section
+	url = https://github.com/red-cup-engineering/semiotic-hypertext-packet-engineering-services-section.git
+	branch = main
