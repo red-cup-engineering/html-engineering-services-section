@@ -1,4 +1,4 @@
-# HTML engineering
+# @red-cup-engineering/html-engineering-services-section
 
 <!-- 561-group-standards:badges:start -->
 [![Red Cup Engineering](https://img.shields.io/badge/561%20Group-Red%20Cup%20Engineering-c0392b)](https://github.com/red-cup-engineering)
@@ -6,6 +6,8 @@
 [![Indigenous data: CARE](https://img.shields.io/badge/Indigenous%20data-CARE-4b6f44)](https://github.com/red-cup-engineering/.github/blob/main/GOVERNANCE.md)
 [![Tips welcome](https://img.shields.io/badge/tips-welcome-d4a017)](https://github.com/561-group/.github/blob/main/TIPS.md)
 <!-- 561-group-standards:badges:end -->
+
+The one section for all HTML: rendering documents and fragments, escaping, structural projection, Markdown-to-HTML, and HTML validity. Seated in computer-data serialization beside xml and json, restricting the XML codec rather than owning competing escaping or AST writers.
 
 HTML has its own native parsing and document carrier beside XML and JSON. HTML error recovery, implied elements, foreign namespaces, template fragments and character-reference contexts cannot be implemented by treating HTML as XML. SVG remains XML. Shared lexical escaping retains text and quoted-attribute values through receiving.
 
