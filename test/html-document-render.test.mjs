@@ -10,7 +10,7 @@ import {
 import {
   intZero,
   intOne,
-} from "@red-cup-engineering/exact-number-data-service/exact-number";
+} from "@red-cup-engineering/metrologic/number/exact-number";
 
 // A settled document fixture: the signcell document spine of one cell per label, (label, names,
 // fixture-part), with the given order and reference edges between those cells' addresses.
