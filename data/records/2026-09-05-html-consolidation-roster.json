@@ -39,7 +39,7 @@
     {
       "function": "renderMarkdownInlineHtml (linkSpan, bounded, escape -- exact-duplicate fingerprints shared with render-markdown-inline-html-nodes-service and render-markdown-block-html-service)",
       "package": "@red-cup-engineering/render-markdown-inline-html-service",
-      "consumers": ["@causeway-services/equivo-service", "@lenticule-science/l-space", "@red-cup-engineering/education-platform-service", "@red-cup-engineering/markdown-services-section", "@red-cup-engineering/render-markdown-block-html-service"],
+      "consumers": ["@causeway-services/equivo-service", "@lenticule-science/l-space", "@red-cup-engineering/education-platform-computer-game-system-engineering-services-section", "@red-cup-engineering/markdown-services-section", "@red-cup-engineering/render-markdown-block-html-service"],
       "bytesInPackage": "scripts/render-markdown-inline-html.mjs, no local test suite",
       "move": "git mv from markdown-inline-html-services-section/services/ into html-engineering-services-section/services/",
       "lawViolationFixed": "dependencies on admit-markdown-link-target-service and read-markdown-features-service were file: relative paths in local source (never actually published that way -- published 0.1.2 already carried exact pins 0.1.0/0.1.0); reverted local source to match: admit-markdown-link-target-service 0.1.0, read-markdown-features-service 0.1.0",
@@ -93,7 +93,7 @@
       "disposition": "genuinely different operation -- left in place. A restricted-vocabulary paste-safe fragment renderer is not the same contract as full HTML-document assembly or general Markdown-to-HTML; no migration performed."
     },
     {
-      "package": "@red-cup-engineering/digital-goods-storefront-services-section",
+      "package": "@red-cup-engineering/digital-goods-storefront-engineering-services-section",
       "capability": "renderCatalogHtml / renderOfferingHtml / esc() -- full standalone HTML document assembly via template literals with an inline escape function",
       "duplicationScan": "jsnode_duplication scope=digital-goods-storefront found 6 candidates, all internal exact duplicates within the package itself -- zero cross-package fingerprint match against html-document-render-service",
       "disposition": "genuinely different operation -- left in place. Document assembly here is flat template-literal string-building (view-model -> <!doctype html> string), not the carrier-node-tree render model html-document-render-service owns; the shapes do not converge at the AST level per the duplication tool, so no migration performed. Its esc() (escapes &<>\"') is semantically close to html-document-render-service's escapeText+escapeAttr combined, but is not migrated this lot since the document-assembly contracts differ and jsnode found no structural match -- named here for a future dedicated escape-primitive consolidation, not performed now."
