@@ -1,0 +1,66 @@
+{
+  "name": "@red-cup-engineering/html-engine",
+  "version": "0.1.1-dev.0",
+  "private": false,
+  "type": "module",
+  "files": [
+    "package.json",
+    "src",
+    "examples",
+    "specification",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./src/html/index.mjs",
+    "./document-nodes": "./src/html/document-nodes.mjs",
+    "./string-rendering": "./src/html/string-rendering.mjs",
+    "./scan": "./src/html/scan.mjs",
+    "./shp-profile": "./src/html/shp-profile.mjs",
+    "./package.json": "./package.json",
+    "./transformations": "./src/html/transformations.mjs",
+    "./lexical": "./src/html/lexical.mjs",
+    "./signcraft-page": "./src/html/signcraft-page.mjs",
+    "./source-codec": "./src/html/source-codec.mjs",
+    "./document-render": "./src/html/document-render.mjs",
+    "./syntax": "./src/upstream/parse5/index.js"
+  },
+  "scripts": {
+    "check": "node --check src/html/*.mjs"
+  },
+  "dependencies": {
+    "@red-cup-engineering/computer-content-engineering-services-section": "^0.2.2",
+    "@red-cup-engineering/computer-text-content-engineering-services-section": "^0.1.3",
+    "@red-cup-engineering/cryptographic-computer-data-engineering-services-section": "^0.3.5",
+    "@red-cup-engineering/xml-document-rendering-service": "^0.3.6",
+    "@red-cup-engineering/signcell": "0.18.0-dev.0",
+    "@red-cup-engineering/json-engine": "^0.5.0",
+    "@red-cup-engineering/css-engineering-services-section": "^0.1.5",
+    "@red-cup-engineering/metrologic": "^0.22.3",
+    "@red-cup-engineering/signcraft": "^0.9.8",
+    "@red-cup-engineering/semiotic-content-address-system": "0.1.7-dev.1",
+    "@red-cup-engineering/typed-content": "0.1.0-dev.0",
+    "@red-cup-engineering/signchain": "0.7.0-dev.0"
+  },
+  "license": "MIT",
+  "funding": {
+    "type": "individual",
+    "url": "https://github.com/561-group/.github/blob/main/TIPS.md"
+  },
+  "engines": {
+    "node": ">=24.2.0"
+  },
+  "packageManager": "pnpm@11.19.0",
+  "receivingTests": [
+    "test/html-transformations.test.mjs",
+    "test/settled-document-carrier-conformance.test.mjs",
+    "test/settled-sections.test.mjs",
+    "test/shp-packet.test.mjs",
+    "examples/read-document.test.mjs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/red-cup-engineering/html-engineering-services-section.git",
+    "directory": "apps/html-engine"
+  }
+}
