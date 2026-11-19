@@ -10,7 +10,7 @@
 import {
   checkStyleResolutionSettled,
   checkClassMapsValid,
-  completionRegimeOf,
+  completionModeOf,
   classByNodeId,
   cssTextFromResolvedStyles,
   firstDuplicate,
@@ -18,7 +18,7 @@ import {
 } from "@red-cup-engineering/css-engineering-services-section/css-style-resolution";
 import { canonicalJson as canonical } from "@red-cup-engineering/json-engine/canonical-json";
 import { parseJsonValue as parse } from "@red-cup-engineering/json-engine/parse-json-value";
-import { admitDocumentSpine } from "@red-cup-engineering/signchain/document-spine";
+import { validateDocumentSpine } from "@red-cup-engineering/signchain/document-spine";
 import { retainedCarrier } from "@red-cup-engineering/semiotic-content-address-system";
 import { readHtmlDocument } from "./scan.mjs";
 import { isXmlName } from "@red-cup-engineering/xml-document-rendering-service/core";
@@ -51,7 +51,7 @@ function escapeAttr(value) { return escapeXmlAttr(htmlText(value)); }
 /* ── carrier ────────────────────────────────────────────────────────────── */
 
 const addressSet = (nodes) => new Set(nodes.map((node) => node.semanticAddress));
-const admittedCarriers = new WeakSet();
+const validatedCarriers = new WeakSet();
 
 const nodeFields = new Set(["kind", "nodeId", "element", "semanticAddress", "valuationSite", "attributes", "text", "html", "children"]);
 /** Own a finite carrier graph whose typed coordinates and child endpoints resolve. */
@@ -118,9 +118,9 @@ export function htmlCarrierOf(
   document,
   nodes,
 ) {
-  const admission = admitDocumentSpine(document);
-  if (!admission.ok) return carrierObstruction("invalid-document-spine", admission.refusal.message);
-  document = admission.value;
+  const validation = validateDocumentSpine(document);
+  if (!validation.ok) return carrierObstruction("invalid-document-spine", validation.refusal.message);
+  document = validation.value;
   try { nodes = ownCarrierNodes(nodes, document); canonical(document); }
   catch (error) { return carrierObstruction("unprojectable-content", error.message); }
   const duplicate = firstDuplicate(nodes.map((node) => node.nodeId));
@@ -156,7 +156,7 @@ export function htmlCarrierOf(
       spineIdentity: document.identity,
     }),
   });
-  admittedCarriers.add(carrier);
+  validatedCarriers.add(carrier);
   return carrier;
 }
 
@@ -183,7 +183,7 @@ export function buildHtmlDocumentPlan(
   system,
   styleBehavior,
 ) {
-  if (!admittedCarriers.has(carrier)) return renderFiberObstruction("unadmitted-carrier", carrier?.kind ?? "missing");
+  if (!validatedCarriers.has(carrier)) return renderFiberObstruction("unadmitted-carrier", carrier?.kind ?? "missing");
   if (system?.carrier !== carrier) return renderFiberObstruction("carrier-system-mismatch", system?.carrier?.kind ?? "missing");
   try {
     profile = retainedCarrier(profile);
@@ -199,9 +199,9 @@ export function buildHtmlDocumentPlan(
   if (!profile.allowedStyleBehavior.includes(styleBehavior)) {
     return renderFiberObstruction("style-behavior-not-allowed", styleBehavior);
   }
-  const completionRegime = completionRegimeOf(system);
-  if (!profile.allowedCompletionRegimes.includes(completionRegime)) {
-    return renderFiberObstruction("completion-regime-not-allowed", completionRegime);
+  const completionMode = completionModeOf(system);
+  if (!profile.allowedCompletionRegimes.includes(completionMode)) {
+    return renderFiberObstruction("completion-regime-not-allowed", completionMode);
   }
   for (const law of requiredLaws) {
     if (!profile.preservationLaws.includes(law)) return renderFiberObstruction("missing-preservation-law", law);
@@ -365,12 +365,12 @@ function spineOfParsedDocument(parsed) {
   if (children.some((child) => child.nodeName !== "#text"))
     throw new TypeError("documentSpineOfHtml: spine content must be inert JSON text");
   const raw = parse(children.map(({ value }) => value).join(""));
-  const admitted = admitDocumentSpine(raw);
-  if (!admitted.ok) throw new TypeError(admitted.refusal.message);
-  if (admitted.value.identity !== identity) throw new TypeError("documentSpineOfHtml: carrier identity differs from its content");
-  if (canonical(raw) !== canonical(admitted.value))
+  const validated = validateDocumentSpine(raw);
+  if (!validated.ok) throw new TypeError(validated.refusal.message);
+  if (validated.value.identity !== identity) throw new TypeError("documentSpineOfHtml: carrier identity differs from its content");
+  if (canonical(raw) !== canonical(validated.value))
     throw new TypeError("documentSpineOfHtml: raw typed coordinates differ from their reconstruction");
-  return admitted.value;
+  return validated.value;
 }
 
 /** Verify the actual parsed carrier, allowing unmarked browser-implied wrappers. */
