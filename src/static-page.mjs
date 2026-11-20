@@ -82,12 +82,12 @@ function completeStaticDocument(
 ) {
   const withHead = head.length === 0
     ? html
-    : html.replace("</head>", `${head.join("\n")}\n</head>`);
+    : html.replace("</head>", () => `${head.join("\n")}\n</head>`);
   if (bodyAttributes === undefined || Object.keys(bodyAttributes).length === 0) return withHead;
   const attributes = Object.entries(bodyAttributes)
     .map(([name, value]) => ` ${escapeAttr(name)}="${escapeAttr(value)}"`)
     .join("");
-  return withHead.replace("<body>", `<body${attributes}>`);
+  return withHead.replace("<body>", () => `<body${attributes}>`);
 }
 
 /** Render a static site page through the shared HTML presentation/profile fiber. */

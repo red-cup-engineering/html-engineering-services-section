@@ -15,3 +15,13 @@ test('a stored page token renders an ordered, escaped static game view', () => {
   assert.equal(renderStaticWebsiteHtmlPresentation(structuredClone(page)), html);
   assert.throws(() => renderStaticWebsiteHtmlPresentation({...page, token: ''}), /token/);
 });
+
+test('authored dollar signs survive in head metadata and body attributes', () => {
+  const html = renderStaticWebsiteHtmlPresentation({
+    token: 'game:fare', title: 'Flight prices', head: ['Fare $$5'],
+    bodyAttributes: {'data-note': 'Pilot $$5'},
+    roots: ['fare'], nodes: [{nodeId: 'fare', element: 'p', text: 'Fare $$5'}],
+  });
+  assert.ok(html.includes('Fare $$5\n</head>'));
+  assert.ok(html.includes('<body data-note="Pilot $$5">'));
+});
