@@ -50,11 +50,9 @@ codec retains exact UTF-8 source custody and native tree recovery, including a
 separate doctype node and the HTML element. Consumers must discriminate `kind`
 as well as `name`: both the doctype and root element can have the name `html`.
 
-The package ships its original structural, settled-carrier, safe-profile and
-source-reader consumer suites as declared receiving tests. Runtime parsing,
-rendering and mathematical suppliers are unchanged in this development cohort.
-The native PNPM lock selects the current declared supplier identities instead
-of workspace links; no local-file dependency or replacement parser is used.
+Run `npm test` to check a saved HTML source address, a document spine, a
+rendered score and a settled score packet through the exported projector.
+The npm archive also includes the parser, structural, settled-carrier and source-reader suites restored from version 0.1.0, with their original reference data.
 
 This is a prerequisite preview. Authentic local archive qualification is not
 registry issuance or live activation. Held upstream approvals and issuance
