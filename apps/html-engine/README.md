@@ -2,6 +2,8 @@
 
 HTML parsing and character references use checked-in [parse5](src/upstream/parse5/UPSTREAM.md) and [entities](src/upstream/entities/UPSTREAM.md) source.
 
+Run `node --test test/game-publication-suppliers.test.mjs` from the HTML Engine package directory to check the source address of a UTF-8 document, its document-spine identifier and a rendered game score. The 0.1.1-dev.0 npm archive accepts the published SignCell 0.18.0, SignChain 0.7.0, Typed Content 0.1.0 and Semiotic Content Address System 0.1.7 packages.
+
 <!-- 561-group-standards:badges:start -->
 [![Red Cup Engineering](https://img.shields.io/badge/561%20Group-Red%20Cup%20Engineering-c0392b)](https://github.com/red-cup-engineering)
 [![License: MIT](https://img.shields.io/badge/license-MIT-c0392b)](LICENSE)
