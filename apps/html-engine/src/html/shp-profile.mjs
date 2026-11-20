@@ -1,10 +1,11 @@
+import { isNonEmptyString, isRecord } from "@red-cup-engineering/signcell/values";
 /** Declarative conformance profile for finite semantic-hypertext packets. */
 import { readHtmlDocument, startTagsOfDocument } from "./scan.mjs";
 const DATA_ATTRIBUTE = /^data-[a-z0-9][a-z0-9-]*$/u;
 const STRUCTURAL_CLASS = /^[A-Za-z][A-Za-z0-9_-]*$/u;
 const REQUIRED_RFC7992_CLASSES = ["bcp14", "xref", "eref", "relref", "selfRef", "artwork", "sourcecode"];
-const isRecord = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
-const nonEmpty = (value) => typeof value === "string" && value.length > 0;
+
+
 /** Source-claimed language, not the viewer's locale, an inferred translation
  * or English by default. The canonical SHP source owner admits the same
  * Intl-recognized canonical BCP 47 subset. */
@@ -17,7 +18,7 @@ export function canonicalShpLanguage(value) {
     if (canonical !== value) throw new TypeError("shp: language must be a canonical BCP 47 tag");
     return value;
 }
-const strings = (value) => Array.isArray(value) && value.length > 0 && value.every(nonEmpty) && new Set(value).size === value.length
+const strings = (value) => Array.isArray(value) && value.length > 0 && value.every(isNonEmptyString) && new Set(value).size === value.length
     ? value
     : null;
 /** Validate the finite-frontier, morphism-identity, RFC 7992, and safety declarations of an SHP profile. */
@@ -32,8 +33,8 @@ export function validateShpProfile(value) {
     };
     if (!isRecord(value))
         return [Object.freeze({ code: "SHP-PROFILE-001", path: "<profile>", message: "profile must be an object" })];
-    const profilePath = nonEmpty(value.profileId) ? value.profileId : "<profile>";
-    if (!nonEmpty(value.profileId))
+    const profilePath = isNonEmptyString(value.profileId) ? value.profileId : "<profile>";
+    if (!isNonEmptyString(value.profileId))
         fail("SHP-PROFILE-002", profilePath, "profileId must be non-empty");
     evidence(value.evidence, profilePath, "SHP-PROFILE-003");
     if (!isRecord(value.object)) {
@@ -41,8 +42,8 @@ export function validateShpProfile(value) {
     }
     else {
         const object = value.object;
-        const path = nonEmpty(object.id) ? object.id : "object";
-        if (!nonEmpty(object.id) || !nonEmpty(object.sourceTrace) || !nonEmpty(object.projectionMorphism)) {
+        const path = isNonEmptyString(object.id) ? object.id : "object";
+        if (!isNonEmptyString(object.id) || !isNonEmptyString(object.sourceTrace) || !isNonEmptyString(object.projectionMorphism)) {
             fail("SHP-OBJECT-002", path, "id, sourceTrace, and projectionMorphism must be non-empty");
         }
         if (object.role !== "semantic-hypertext-packet" || object.carrier !== "html-document" || object.finite !== true) {
@@ -67,7 +68,7 @@ export function validateShpProfile(value) {
                 projection = true;
             if (candidate.kind !== "projection" && candidate.kind !== "markup")
                 fail("SHP-DIR-003", path, "kind must be projection or markup");
-            if (![candidate.inputCarrier, candidate.outputCarrier, candidate.morphism].every(nonEmpty))
+            if (![candidate.inputCarrier, candidate.outputCarrier, candidate.morphism].every(isNonEmptyString))
                 fail("SHP-DIR-004", path, "carrier and morphism names must be non-empty");
             if (candidate.deterministic !== true || candidate.monotone !== true)
                 fail("SHP-DIR-005", path, "direction must be deterministic and monotone");
@@ -96,13 +97,13 @@ export function validateShpProfile(value) {
                 const path = `packetGrammar.morphismIdentities[${index}]`;
                 if (!isRecord(candidate))
                     return fail("SHP-GRAMMAR-005", path, "identity must be an object");
-                if (!nonEmpty(candidate.className) || !STRUCTURAL_CLASS.test(candidate.className))
+                if (!isNonEmptyString(candidate.className) || !STRUCTURAL_CLASS.test(candidate.className))
                     fail("SHP-GRAMMAR-006", path, "className must be a structural class token");
                 else if (seen.has(candidate.className))
                     fail("SHP-GRAMMAR-007", path, "className must be unique");
                 else
                     seen.add(candidate.className);
-                if (!nonEmpty(candidate.morphism) || (candidate.source !== "spotcomp" && candidate.source !== "rfc7992"))
+                if (!isNonEmptyString(candidate.morphism) || (candidate.source !== "spotcomp" && candidate.source !== "rfc7992"))
                     fail("SHP-GRAMMAR-008", path, "morphism and recognized source are required");
                 if (candidate.carrierAttributes !== undefined && (!Array.isArray(candidate.carrierAttributes) || !candidate.carrierAttributes.every((name) => typeof name === "string" && DATA_ATTRIBUTE.test(name))))
                     fail("SHP-GRAMMAR-009", path, "identity carrierAttributes must be data-* names");

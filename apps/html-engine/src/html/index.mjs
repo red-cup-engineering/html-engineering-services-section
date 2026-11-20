@@ -1,3 +1,4 @@
+import { deepFreeze } from "@red-cup-engineering/signcell/values";
 /**
  * codecs/html - the Semantic Hypertext Packet (SHP) codec: a carrier⇄HTML
  * holography projector.
@@ -494,14 +495,7 @@ export function cellKey(cell) {
 export function address(content) {
     return `sha256:${sha256Bytes(new TextEncoder().encode(content))}`;
 }
-function deepFreeze(value) {
-    if (value !== null && typeof value === "object") {
-        for (const child of Object.values(value))
-            deepFreeze(child);
-        Object.freeze(value);
-    }
-    return value;
-}
+
 function toldCellContent({ cell, evidence: e }) {
     return { cell, reading: readingOf(e), evidence: [e.for.map(witnessValue), e.against.map(witnessValue)] };
 }

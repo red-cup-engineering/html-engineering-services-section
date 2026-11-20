@@ -1,3 +1,4 @@
+import { identity } from "@red-cup-engineering/signcell/values";
 /**
  * Article head metadata: canonical URL, description, social tags and
  * schema.org JSON-LD over the original admitted Article contract.
@@ -25,9 +26,7 @@ function firstNonEmpty(...values) {
 export { metaTag, openGraphTags, twitterCardTags, socialMetaTags, META_PREDICATE_MAP, webAppManifest, webAppManifestLink } from "./metadata.mjs";
 import { openGraphTags, twitterCardTags } from "./metadata.mjs";
 
-function asJsonLdNode(value) {
-  return value;
-}
+
 
 /** The one canonical-URL derivation for an Article: explicit option, then Article properties, then baseUrl+slug. */
 export function articleUrl(article, options = {}) {
@@ -73,21 +72,21 @@ export function articleHeadMetadata(article, options = {}) {
     twitterSite: options.twitterAccount, twitterCreator: options.twitterCreator };
 
   const schemaArticle = narrowToArticleSchema(article);
-  const articleNode = asJsonLdNode(
+  const articleNode = identity(
     options.newsArticle ? articleToNewsArticleJsonLd(schemaArticle) : articleToArticleJsonLd(schemaArticle, url === undefined ? {} : { url }),
   );
   const websiteUrl = options.websiteUrl ?? url;
-  const websiteNode = options.websiteName === undefined || websiteUrl === undefined ? undefined : asJsonLdNode(websiteContextToWebSiteJsonLd({
+  const websiteNode = options.websiteName === undefined || websiteUrl === undefined ? undefined : identity(websiteContextToWebSiteJsonLd({
     websiteUrl,
     title: options.websiteName,
     websiteName: options.websiteName,
   }));
-  const crumbsNode = options.routePath === undefined ? undefined : asJsonLdNode(
+  const crumbsNode = options.routePath === undefined ? undefined : identity(
     breadcrumbJsonLd(options.routePath, { websiteUrl: websiteUrl ?? "/", rootName: options.websiteName ?? "Home" }),
   );
 
   const nodes = [articleNode, websiteNode, crumbsNode].filter((node) => node !== undefined);
-  const jsonLd = nodes.length === 0 ? undefined : nodes.length === 1 ? nodes[0] : asJsonLdNode(entityGraphJsonLd(nodes));
+  const jsonLd = nodes.length === 0 ? undefined : nodes.length === 1 ? nodes[0] : identity(entityGraphJsonLd(nodes));
 
   return Object.freeze({
     description,
