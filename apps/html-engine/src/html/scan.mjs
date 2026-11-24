@@ -1,0 +1,61 @@
+import {parse,Parser,defaultTreeAdapter} from '../upstream/parse5/index.js';
+import {decodeHTML,decodeHTMLAttribute} from '../upstream/entities/index.js';
+export const decodeHtmlEntities=(value,context='text')=>{
+ if(context!=='text'&&context!=='attribute')throw new TypeError('HTML entity context must be text or attribute');
+ return context==='attribute'?decodeHTMLAttribute(value):decodeHTML(value);
+};
+/** Native HTML document parsing; no scripts, fetching or browser layout. */
+export function readHtmlDocument(html,{maximumNodes=Infinity,maximumDepth=Infinity,maximumAttributes=Infinity,onParseError,onSourceStartTag}={}){
+ if(onSourceStartTag!==undefined&&typeof onSourceStartTag!=='function')
+  throw new TypeError('source-tag receiving requires a function');
+ let created=0;
+ const treeAdapter={...defaultTreeAdapter,createElement(...args){if(++created>maximumNodes)throw new RangeError('HTML exceeds its node limit');return defaultTreeAdapter.createElement(...args);}};
+ // The regular DOM remains the original parser. A packet receiver may also
+ // witness lexical start-tag tokens *before* HTML tree correction merges a
+ // second <html> into the first. Use parse5's own tokenizer/Parser, not a
+ // parallel regex or handcrafted HTML lexer.
+ let document;
+ if(onSourceStartTag===undefined){
+  document=parse(html,{sourceCodeLocationInfo:true,scriptingEnabled:true,treeAdapter,onParseError});
+ }else{
+  const parser=new Parser({sourceCodeLocationInfo:true,scriptingEnabled:true,treeAdapter,onParseError});
+  const original=parser.onStartTag.bind(parser);
+  parser.onStartTag=token=>{
+   // The original tokenizer object remains exclusively owned by parse5.
+   // A receiving callback gets an immutable, detached source observation:
+   // it cannot change the token before tree insertion or update its attrs.
+   const observation=Object.freeze({
+    tagName:token.tagName,
+    location:token.location ? Object.freeze({startOffset:token.location.startOffset}) : null,
+    attrs:Object.freeze(token.attrs.map(({name,value})=>Object.freeze({name,value}))),
+   });
+   onSourceStartTag(observation);
+   return original(token);
+  };
+  parser.tokenizer.write(html,true);
+  document=parser.document;
+ }
+ const stack=[{node:document,depth:0}];let nodes=0,attributes=0;
+ while(stack.length){const {node,depth}=stack.pop();if(++nodes>maximumNodes||depth>maximumDepth)throw new RangeError('HTML exceeds its node/depth limit');attributes+=node.attrs?.length??0;if(attributes>maximumAttributes)throw new RangeError('HTML exceeds its attribute limit');for(const child of node.childNodes??[])stack.push({node:child,depth:depth+1});if(node.content)stack.push({node:node.content,depth:depth+1});}
+ return document;
+}
+/** Explicit parsed start tags in authored order; inert bodies remain excluded.
+ * Browser tree correction may discard tags. Implied nodes have no source row.
+ * Indices are zero-based UTF-16 code units in the original input, not bytes.
+ */
+export function startTagsOfDocument(document){
+ const out=[],stack=[document];
+ while(stack.length){const node=stack.pop();if(node.tagName){const at=node.sourceCodeLocation?.startTag??node.sourceCodeLocation;if(at){const attrs=Object.fromEntries((node.attrs??[]).map(a=>[(a.prefix?a.prefix+':':'')+a.name,a.value]));out.push(Object.freeze({name:node.tagName.toLowerCase(),attrs:Object.freeze(attrs),index:at.startOffset}));}if(['script','style','template'].includes(node.tagName.toLowerCase()))continue;}
+  for(const child of node.childNodes??[])stack.push(child);
+ }
+ out.sort((a,b)=>a.index-b.index);return Object.freeze(out);
+}
+/** Same native parser and tree correction; an optional trusted callback
+ * additionally witnesses start-tag tokens before tree recovery drops them.
+ * Token source location is authored bytes, not synthesized DOM position. */
+export const scanHtmlStartTags=(html,{onSourceStartTag}={})=>
+ startTagsOfDocument(readHtmlDocument(html,{onSourceStartTag}));
+export const relTokens=attrs=>attrs.rel?Object.freeze(attrs.rel.trim().toLowerCase().split(/\s+/).filter(Boolean)):Object.freeze([]);
+/** First parsed base href, with the actual document URL as fallback. */
+export function documentBaseFromTags(tags,fallbackUrl){for(const tag of tags){if(tag.name==='base'&&tag.attrs.href!==undefined){try{return new URL(tag.attrs.href,fallbackUrl).href;}catch{return fallbackUrl;}}}return fallbackUrl;}
+export const htmlDocumentBase=(html,fallbackUrl)=>documentBaseFromTags(scanHtmlStartTags(html),fallbackUrl);

@@ -1,0 +1,262 @@
+import { isNonEmptyString, isRecord } from "@red-cup-engineering/signcell/values";
+/** Declarative conformance profile for finite semantic-hypertext packets. */
+import { readHtmlDocument, startTagsOfDocument } from "./scan.mjs";
+const DATA_ATTRIBUTE = /^data-[a-z0-9][a-z0-9-]*$/u;
+const STRUCTURAL_CLASS = /^[A-Za-z][A-Za-z0-9_-]*$/u;
+const REQUIRED_RFC7992_CLASSES = ["bcp14", "xref", "eref", "relref", "selfRef", "artwork", "sourcecode"];
+
+
+/** Source-claimed language, not the viewer's locale, an inferred translation
+ * or English by default. The canonical SHP source owner admits the same
+ * Intl-recognized canonical BCP 47 subset. */
+export function canonicalShpLanguage(value) {
+    if (typeof value !== "string" || !value || value.length > 128 || value.trim() !== value)
+        throw new TypeError("shp: language must be a canonical BCP 47 tag");
+    let canonical;
+    try { [canonical] = Intl.getCanonicalLocales(value); }
+    catch { throw new TypeError("shp: language must be a canonical BCP 47 tag"); }
+    if (canonical !== value) throw new TypeError("shp: language must be a canonical BCP 47 tag");
+    return value;
+}
+const strings = (value) => Array.isArray(value) && value.length > 0 && value.every(isNonEmptyString) && new Set(value).size === value.length
+    ? value
+    : null;
+/** Validate the finite-frontier, morphism-identity, RFC 7992, and safety declarations of an SHP profile. */
+export function validateShpProfile(value) {
+    const violations = [];
+    const fail = (code, path, message) => {
+        violations.push(Object.freeze({ code, path, message }));
+    };
+    const evidence = (candidate, path, code) => {
+        if (strings(candidate) === null)
+            fail(code, path, "must cite unique non-empty evidence");
+    };
+    if (!isRecord(value))
+        return [Object.freeze({ code: "SHP-PROFILE-001", path: "<profile>", message: "profile must be an object" })];
+    const profilePath = isNonEmptyString(value.profileId) ? value.profileId : "<profile>";
+    if (!isNonEmptyString(value.profileId))
+        fail("SHP-PROFILE-002", profilePath, "profileId must be non-empty");
+    evidence(value.evidence, profilePath, "SHP-PROFILE-003");
+    if (!isRecord(value.object)) {
+        fail("SHP-OBJECT-001", profilePath, "object declaration is required");
+    }
+    else {
+        const object = value.object;
+        const path = isNonEmptyString(object.id) ? object.id : "object";
+        if (!isNonEmptyString(object.id) || !isNonEmptyString(object.sourceTrace) || !isNonEmptyString(object.projectionMorphism)) {
+            fail("SHP-OBJECT-002", path, "id, sourceTrace, and projectionMorphism must be non-empty");
+        }
+        if (object.role !== "semantic-hypertext-packet" || object.carrier !== "html-document" || object.finite !== true) {
+            fail("SHP-OBJECT-003", path, "object must be a finite semantic-hypertext-packet HTML document");
+        }
+        if (strings(object.traceFrontier) === null)
+            fail("SHP-OBJECT-004", path, "traceFrontier must be finite, unique, and non-empty");
+        if (strings(object.settlementEvidence) === null)
+            fail("SHP-OBJECT-005", path, "settlementEvidence must be unique and non-empty");
+        evidence(object.evidence, path, "SHP-OBJECT-006");
+    }
+    if (!Array.isArray(value.directions) || value.directions.length === 0) {
+        fail("SHP-DIR-001", profilePath, "directions must be non-empty");
+    }
+    else {
+        let projection = false;
+        value.directions.forEach((candidate, index) => {
+            const path = `directions[${index}]`;
+            if (!isRecord(candidate))
+                return fail("SHP-DIR-002", path, "direction must be an object");
+            if (candidate.kind === "projection")
+                projection = true;
+            if (candidate.kind !== "projection" && candidate.kind !== "markup")
+                fail("SHP-DIR-003", path, "kind must be projection or markup");
+            if (![candidate.inputCarrier, candidate.outputCarrier, candidate.morphism].every(isNonEmptyString))
+                fail("SHP-DIR-004", path, "carrier and morphism names must be non-empty");
+            if (candidate.deterministic !== true || candidate.monotone !== true)
+                fail("SHP-DIR-005", path, "direction must be deterministic and monotone");
+            evidence(candidate.evidence, path, "SHP-DIR-006");
+        });
+        if (!projection)
+            fail("SHP-DIR-007", profilePath, "a projection direction is required");
+    }
+    if (!isRecord(value.packetGrammar)) {
+        fail("SHP-GRAMMAR-001", profilePath, "packetGrammar declaration is required");
+    }
+    else {
+        const grammar = value.packetGrammar;
+        if (grammar.classNamesAreMorphismIdentities !== true || grammar.dataAttributesCarryInputCarrierElements !== true || grammar.carrierOfCarriers !== true || grammar.alternatePlainTextPacketProfile !== false) {
+            fail("SHP-GRAMMAR-002", "packetGrammar", "packet carrier and morphism identity laws must be declared");
+        }
+        const carrierAttributes = strings(grammar.carrierAttributes);
+        if (carrierAttributes === null || !carrierAttributes.every((name) => DATA_ATTRIBUTE.test(name)))
+            fail("SHP-GRAMMAR-003", "packetGrammar", "carrierAttributes must be unique data-* names");
+        if (!Array.isArray(grammar.morphismIdentities) || grammar.morphismIdentities.length === 0) {
+            fail("SHP-GRAMMAR-004", "packetGrammar", "morphismIdentities must be non-empty");
+        }
+        else {
+            const seen = new Set();
+            grammar.morphismIdentities.forEach((candidate, index) => {
+                const path = `packetGrammar.morphismIdentities[${index}]`;
+                if (!isRecord(candidate))
+                    return fail("SHP-GRAMMAR-005", path, "identity must be an object");
+                if (!isNonEmptyString(candidate.className) || !STRUCTURAL_CLASS.test(candidate.className))
+                    fail("SHP-GRAMMAR-006", path, "className must be a structural class token");
+                else if (seen.has(candidate.className))
+                    fail("SHP-GRAMMAR-007", path, "className must be unique");
+                else
+                    seen.add(candidate.className);
+                if (!isNonEmptyString(candidate.morphism) || (candidate.source !== "spotcomp" && candidate.source !== "rfc7992"))
+                    fail("SHP-GRAMMAR-008", path, "morphism and recognized source are required");
+                if (candidate.carrierAttributes !== undefined && (!Array.isArray(candidate.carrierAttributes) || !candidate.carrierAttributes.every((name) => typeof name === "string" && DATA_ATTRIBUTE.test(name))))
+                    fail("SHP-GRAMMAR-009", path, "identity carrierAttributes must be data-* names");
+                if (candidate.source === "spotcomp" && (!Array.isArray(candidate.carrierAttributes) || candidate.carrierAttributes.length === 0))
+                    fail("SHP-GRAMMAR-010", path, "SPOTCOMP identities must cite carrier attributes");
+                evidence(candidate.evidence, path, "SHP-GRAMMAR-011");
+            });
+        }
+        evidence(grammar.evidence, "packetGrammar", "SHP-GRAMMAR-012");
+    }
+    if (!isRecord(value.rfc7992Inhabitant)) {
+        fail("SHP-RFC7992-001", profilePath, "rfc7992Inhabitant declaration is required");
+    }
+    else {
+        const inhabitant = value.rfc7992Inhabitant;
+        const exact = {
+            enabled: true, status: "inhabitant-profile", doctype: "<!DOCTYPE html>", rootLang: "en",
+            rootClassSource: "seriesInfo", charset: "utf-8", lineEndings: "LF", attributeQuoting: "double",
+            requiredExternalResources: false, executableScripts: false,
+        };
+        for (const [key, expected] of Object.entries(exact))
+            if (inhabitant[key] !== expected)
+                fail("SHP-RFC7992-002", "rfc7992Inhabitant", `${key} must be ${String(expected)}`);
+        const classes = strings(inhabitant.structuralClasses);
+        if (classes === null || REQUIRED_RFC7992_CLASSES.some((name) => !classes.includes(name)))
+            fail("SHP-RFC7992-003", "rfc7992Inhabitant", "required RFC 7992 structural classes are missing");
+        evidence(inhabitant.evidence, "rfc7992Inhabitant", "SHP-RFC7992-004");
+    }
+    if (!isRecord(value.safety)) {
+        fail("SHP-SAFETY-001", profilePath, "safety declaration is required");
+    }
+    else {
+        if (value.safety.parseAsUntrusted !== true || value.safety.noScriptExecution !== true || value.safety.noRequiredExternalResources !== true)
+            fail("SHP-SAFETY-002", "safety", "untrusted parsing, script refusal, and external-resource independence are required");
+        evidence(value.safety.evidence, "safety", "SHP-SAFETY-003");
+    }
+    return Object.freeze(violations);
+}
+/** Assert and narrow a declarative SHP profile. */
+export function assertValidShpProfile(value) {
+    const violations = validateShpProfile(value);
+    if (violations.length > 0)
+        throw new TypeError(violations.map(({ code, path, message }) => `${code} ${path}: ${message}`).join("\n"));
+}
+/** Generic SHP inspection safety. English-only RFC 7992 is a separate
+ * specific inhabitant declaration; it cannot govern all SHP packets. */
+export function validateShpDocumentBytes(value) {
+    if (typeof value !== "string" || value.length === 0)
+        return [Object.freeze({ code: "SHP-DOC-001", path: "<document>", message: "document bytes must be a non-empty string" })];
+    const violations = [];
+    const fail = (code, message) => { violations.push(Object.freeze({ code, path: "<document>", message })); };
+    if (!/^<!doctype html>/i.test(value))
+        fail("SHP-DOC-002", "document must start with an HTML doctype");
+    // Read the real root through the same native parser as the safety scan.
+    // Child, comment and template language claims cannot replace root testimony.
+    let sourceRoots = 0;
+    const authoredStartTags = [];
+    const document = readHtmlDocument(value, { onSourceStartTag: token => {
+        // The tokenizer records authored tokens even when tree correction
+        // moves/discards a tag. Comments and quoted text have no start token.
+        if (token.tagName === "html") sourceRoots++;
+        authoredStartTags.push({
+            name: token.tagName,
+            attributes: Object.fromEntries(token.attrs.map(({ name, value }) => [name, value])),
+        });
+    }});
+    const tags = startTagsOfDocument(document);
+    const roots = tags.filter(({ name }) => name === "html");
+    if (sourceRoots !== 1 || roots.length !== 1) {
+        fail("SHP-DOC-003", "packet must carry exactly one original HTML root start tag");
+    } else if (roots[0].attrs.lang !== undefined) {
+        try { canonicalShpLanguage(roots[0].attrs.lang); }
+        catch { fail("SHP-DOC-003", "source-declared root language must be a canonical BCP 47 tag"); }
+    }
+    // Accept evidence only from actual parsed elements. A comment or quoted
+    // value can contain text resembling an attribute without introducing one.
+    if (!tags.some(({ name, attrs }) => name === "meta" && attrs.charset?.toLowerCase() === "utf-8"))
+        fail("SHP-DOC-004", "document must declare utf-8 charset");
+    if (authoredStartTags.some(({ name }) => name === "script"))
+        fail("SHP-DOC-005", "document must not contain scripts");
+    // Parse attribute values (including single quotes, unquoted URLs and
+    // HTML entities), not raw substrings that comments can forge.
+    const isNetworkUrl = url => typeof url === "string" &&
+        // Special-scheme URL parsing treats backslashes as slashes. Mixed
+        // slash pairs can therefore select another host just like //host.
+        /^(?:https?:|[\\/]{2})/iu.test(url.replace(/[\u0000-\u0020\u007f]/gu, ""));
+    // Network-bearing attributes exist beyond img/src and link/href:
+    // media src/poster, track, input-image, legacy backgrounds and SVG
+    // image/use references can all fetch resources during inspection.
+    // Check authored tokens from the real HTML parser rather than DOM-only
+    // survivors or raw text in comments. Passive a/href links stay allowed.
+    // Responsive candidates are not safely divisible with substring checks:
+    // refuse their presence until a standards-qualified parser is available.
+    const resourceAttributes = new Set(["src", "poster", "background", "data"]);
+    const linkedResourceElements = new Set(["link", "image", "use", "feimage"]);
+    if (authoredStartTags.some(({ name, attributes }) =>
+        Object.entries(attributes).some(([attribute, url]) =>
+            attribute === "srcset" || attribute === "imagesrcset" ||
+            (resourceAttributes.has(attribute) && isNetworkUrl(url)) ||
+            ((attribute === "href" || attribute === "xlink:href") &&
+                linkedResourceElements.has(name) && isNetworkUrl(url)))))
+        fail("SHP-DOC-006", "document must not require external network resources");
+    // CSS @import, URL functions and image sets can fetch during display.
+    // A complete CSS resource resolver is not in this packet's contract:
+    // conservatively refuse fetching syntax, even if it names a local file.
+    const cssMayRequestResource = css => {
+        if (typeof css !== "string") return false;
+        // CSS escapes can spell names (u\72l, @im\70ort); normalize
+        // rather than using a raw substring check bypassable by escapes.
+        // CSS comment markers within quoted strings are not comments. A
+        // regex that strips /* ... */ can erase a live URL loader between
+        // two strings. Keep the whole authored CSS and fail closed when
+        // resource syntax appears, including inside inert CSS comments.
+        const normalized = css.replace(/\\(?:([0-9a-f]{1,6})(?:\r\n|[\t\n\f\r ])?|([^\r\n\f]))/giu,
+                (_escape, hexadecimal, character) => {
+                    if (!hexadecimal) return character;
+                    const point = parseInt(hexadecimal, 16);
+                    return point > 0 && point <= 0x10ffff ? String.fromCodePoint(point) : "\ufffd";
+                });
+        return /@import\b|(?:url|src|image-set|cross-fade)\s*\(/iu.test(normalized);
+    };
+    let cssResource = authoredStartTags.some(({ attributes }) => cssMayRequestResource(attributes.style));
+    const cssNodes = [document];
+    while (!cssResource && cssNodes.length > 0) {
+        const node = cssNodes.pop();
+        if (node.tagName === "style" &&
+            cssMayRequestResource((node.childNodes ?? []).map(child => child.value ?? "").join("")))
+            cssResource = true;
+        for (const child of node.childNodes ?? []) cssNodes.push(child);
+        if (node.content) cssNodes.push(node.content);
+    }
+    if (cssResource)
+        fail("SHP-DOC-006", "document CSS must not request external resources");
+    if (!tags.some(({ attrs }) => typeof attrs.class === "string" && attrs.class.trim().length > 0))
+        fail("SHP-DOC-007", "document must carry structural classes");
+    if (!tags.some(({ attrs }) => Object.entries(attrs).some(([name, coordinate]) =>
+        DATA_ATTRIBUTE.test(name) && typeof coordinate === "string" && coordinate.length > 0)))
+        fail("SHP-DOC-008", "document must carry data-* coordinates");
+    if (/\r/.test(value))
+        fail("SHP-DOC-009", "document must use LF line endings");
+    // The DOM-only structural walk skips template contents. Enforce the
+    // security boundary on parser-witnessed source tokens instead, including
+    // inert template fragments that a consumer could later instantiate.
+    for (const { name, attributes: attrs } of authoredStartTags) {
+        if (Object.keys(attrs).some((key) => /^on/i.test(key)))
+            fail("SHP-DOC-010", "inspection must not execute event handlers");
+        if (["iframe", "object", "embed", "base"].includes(name) || attrs.srcdoc !== undefined || (name === "meta" && attrs["http-equiv"]?.trim().toLowerCase() === "refresh"))
+            fail("SHP-DOC-011", "inspection must not activate embedded documents or redirects");
+        for (const key of ["href", "src", "action", "formaction", "xlink:href"]) {
+            const target = attrs[key]?.replace(/[\u0000-\u0020\u007f]/gu, "");
+            if (target !== undefined && /^(?:javascript|vbscript):/iu.test(target))
+                fail("SHP-DOC-012", "inspection must not carry executable URL schemes");
+        }
+    }
+    return Object.freeze(violations);
+}
