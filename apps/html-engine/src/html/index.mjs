@@ -1,3 +1,4 @@
+import { sha256Hex } from "@red-cup-engineering/semiotic-content-address-system";
 import { deepFreeze } from "@red-cup-engineering/signcell/values";
 /**
  * codecs/html - the Semantic Hypertext Packet (SHP) codec: a carrier⇄HTML
@@ -19,7 +20,6 @@ import { evidence as toldEvidence, sidesOf } from "@red-cup-engineering/signcell
 import { calmReadingOf, readingMark, readingOf } from "@red-cup-engineering/xml-document-rendering-service/svg";
 import { canonicalJson as canonical } from "@red-cup-engineering/json-engine/canonical-json";
 import { parseJsonValue as parse } from "@red-cup-engineering/json-engine/parse-json-value";
-import { sha256Bytes } from "@red-cup-engineering/cryptographic-computer-data-engineering-services-section/portable-sha256";
 import { slugify as slugifyText } from "@red-cup-engineering/computer-text-content-engineering-services-section/slugify-text";
 import { decodeHtmlEntities, scanHtmlStartTags } from "./scan.mjs";
 import { htmlDisplayText, escapeHtmlTextValue, escapeHtmlAttributeValue } from "./lexical.mjs";
@@ -493,7 +493,7 @@ export function cellKey(cell) {
  * @returns A SHA-256 content address.
  */
 export function address(content) {
-    return `sha256:${sha256Bytes(new TextEncoder().encode(content))}`;
+    return `sha256:${sha256Hex(new TextEncoder().encode(content))}`;
 }
 
 function toldCellContent({ cell, evidence: e }) {
